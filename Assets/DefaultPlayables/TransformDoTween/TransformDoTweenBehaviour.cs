@@ -1,5 +1,10 @@
 using System;
+using System.IO;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 using DG.Tweening;
+using TimelineExtensions;
 using UnityEngine;
 using UnityEngine.Playables;
 #if UNITY_EDITOR
@@ -10,6 +15,28 @@ using UnityEditor;
 [Serializable]
 public class TransformDoTweenBehaviour : PlayableBehaviour
 {
+    [Serializable]
+    public class PositionRotationPair
+    {
+        public Vector3 Position;
+        public Vector3 Rotation;
+
+        public PositionRotationPair ()
+        {
+        }
+
+        public PositionRotationPair (Vector3 position, Vector3 rotation)
+        {
+            Position = position;
+            Rotation = rotation;
+        }
+
+        public override string ToString ()
+        {
+            return $"PositionRotationPair {nameof (Position)}: {Position}, {nameof (Rotation)}: {Rotation}";
+        }
+    }
+
 #if UNITY_EDITOR
     [CustomPropertyDrawer (typeof (TransformDoTweenBehaviour))]
     public class TransformDoTweenDrawer : PropertyDrawer
@@ -25,25 +52,33 @@ public class TransformDoTweenBehaviour : PlayableBehaviour
 
         public override void OnGUI (Rect position, SerializedProperty property, GUIContent label)
         {
-            SerializedProperty startLocationProp = property.FindPropertyRelative ("startPosition");
-            SerializedProperty endLocationProp = property.FindPropertyRelative ("endPosition");
+            SerializedProperty startPositionProp = property.FindPropertyRelative ("startPosition");
+            SerializedProperty endPositionProp = property.FindPropertyRelative ("endPosition");
             SerializedProperty startRotationProp = property.FindPropertyRelative ("startRotation");
             SerializedProperty endRotationProp = property.FindPropertyRelative ("endRotation");
             SerializedProperty positionEaseProp = property.FindPropertyRelative ("positionEase");
             SerializedProperty rotationEaseProp = property.FindPropertyRelative ("rotationEase");
 
             Rect rect = new Rect (position.x, position.y, position.width, 0f);
-            rect = DrawProperty (startLocationProp, rect);
+            rect = DrawProperty (startPositionProp, rect);
             rect = DrawProperty (startRotationProp, rect);
-            rect = DrawProperty (endLocationProp, rect);
+            rect = DrawProperty (endPositionProp, rect);
             rect = DrawProperty (endRotationProp, rect);
             rect = DrawProperty (positionEaseProp, rect);
-            DrawProperty (rotationEaseProp, rect);
+            rect = DrawProperty (rotationEaseProp, rect);
+
+            float width = 90f;
+            rect.x = rect.x + (rect.width - width) / 2f;
+            rect.y += rect.height;
+            rect.width = width;
+            if (GUI.Button (rect, "Copy End"))
+                Utils.SerializeToSystemCopyBuffer (
+                    new PositionRotationPair (endPositionProp.vector3Value, endRotationProp.vector3Value));
         }
 
         public override float GetPropertyHeight (SerializedProperty property, GUIContent label)
         {
-            return EditorGUIUtility.singleLineHeight * 9f;
+            return EditorGUIUtility.singleLineHeight * 10f;
         }
     }
 #endif

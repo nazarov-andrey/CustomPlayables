@@ -35,3 +35,6 @@ sysinfo.txt
 
 #Rider
 .idea
+
+#macOS
+.DS_Store

@@ -66,6 +66,17 @@ public class TransformDoTweenMixerBehaviour : PlayableBehaviour
         return GetValueProvider (playableInput, rotationProviders, x => Quaternion.Euler (x.startRotation));
     }
 
+    private bool TryCast<TBehaviour> (Playable playableInput, out ScriptPlayable<TBehaviour> scriptPlayable) where TBehaviour : class, IPlayableBehaviour, new()
+    {
+        try {
+            scriptPlayable = (ScriptPlayable<TBehaviour>) playableInput;
+            return true;
+        } catch (InvalidCastException) {
+            scriptPlayable = default (ScriptPlayable<TBehaviour>);
+            return false;
+        }
+    }
+
     public override void ProcessFrame (Playable playable, FrameData info, object playerData)
     {
         Transform trackBinding = playerData as Transform;
@@ -82,29 +93,44 @@ public class TransformDoTweenMixerBehaviour : PlayableBehaviour
         float totalWeight = 0f;
 
         for (int i = 0, inputCount = playable.GetInputCount (); i < inputCount; i++) {
-            ScriptPlayable<TransformDoTweenBehaviour> playableInput =
-                (ScriptPlayable<TransformDoTweenBehaviour>) playable.GetInput (i);
-
+            Vector3 position = Vector3.zero;
+            Quaternion rotation = Quaternion.identity;
+            Playable playableInput = playable.GetInput (i);
             float weight = playable.GetInputWeight (i);
             totalWeight += weight;
 
-            VectorTweenProvider valueTweenProvider = GetPositionProvider (playableInput);
-            blendedPosition += valueTweenProvider.Value * weight;
+            do {
+                ScriptPlayable<TransformDoTweenBehaviour> doTweenInput;
+                if (TryCast (playableInput, out doTweenInput)) {
+                    position = GetPositionProvider (doTweenInput).Value;
+                    rotation = GetRotationProvider (doTweenInput).Value;
+                    
+                    break;
+                }
 
-            QuaternionTweenProvider quaternionTweenProvider = GetRotationProvider (playableInput);
-            Quaternion desiredRotation = quaternionTweenProvider.Value;
-            desiredRotation = NormalizeQuaternion (desiredRotation);
+                ScriptPlayable<TransformControlBehaviour> transformControlInput;
+                if (TryCast (playableInput, out transformControlInput)) {
+                    TransformControlBehaviour behaviour = transformControlInput.GetBehaviour ();
+                    position = behaviour.Position;
+                    rotation = Quaternion.Euler (behaviour.Rotation);
+                    
+                    break;
+                }
+            } while (false);
 
-            if (Quaternion.Dot (blendedRotation, desiredRotation) < 0f) {
-                desiredRotation = ScaleQuaternion (desiredRotation, -1f);
-            }
-
-            desiredRotation = ScaleQuaternion (desiredRotation, weight);
-            blendedRotation *= desiredRotation;
+            blendedPosition += position * weight;
+            blendedRotation *= ScaleQuaternion (rotation, weight);
         }
 
+        Debug.Log("position " + blendedPosition  + " " + totalWeight);
+        Debug.Log("rotation " + blendedRotation.eulerAngles + " " + totalWeight);
+        
+        
         trackBinding.position = blendedPosition + (1f - totalWeight) * defaultPosition.Value;
         trackBinding.rotation = blendedRotation * ScaleQuaternion (defaultRotation.Value, 1f - totalWeight);
+        
+        Debug.Log("trackBinding.position " + trackBinding.position);
+        Debug.Log("trackBinding.rotation " + trackBinding.rotation);
     }
 
     public override void OnPlayableDestroy (Playable playable)
@@ -116,21 +142,5 @@ public class TransformDoTweenMixerBehaviour : PlayableBehaviour
     static Quaternion ScaleQuaternion (Quaternion rotation, float multiplier)
     {
         return Quaternion.Euler (rotation.eulerAngles * multiplier);
-    }
-
-    static Quaternion NormalizeQuaternion (Quaternion rotation)
-    {
-        float magnitude = QuaternionMagnitude (rotation);
-
-        if (magnitude > 0f)
-            return ScaleQuaternion (rotation, 1f / magnitude);
-
-        Debug.LogWarning ("Cannot normalize a quaternion with zero magnitude.");
-        return Quaternion.identity;
-    }
-
-    static float QuaternionMagnitude (Quaternion rotation)
-    {
-        return Mathf.Sqrt ((Quaternion.Dot (rotation, rotation)));
     }
 }
