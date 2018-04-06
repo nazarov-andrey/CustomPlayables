@@ -121,16 +121,9 @@ public class TransformDoTweenMixerBehaviour : PlayableBehaviour
             blendedPosition += position * weight;
             blendedRotation *= ScaleQuaternion (rotation, weight);
         }
-
-        Debug.Log("position " + blendedPosition  + " " + totalWeight);
-        Debug.Log("rotation " + blendedRotation.eulerAngles + " " + totalWeight);
-        
         
         trackBinding.position = blendedPosition + (1f - totalWeight) * defaultPosition.Value;
         trackBinding.rotation = blendedRotation * ScaleQuaternion (defaultRotation.Value, 1f - totalWeight);
-        
-        Debug.Log("trackBinding.position " + trackBinding.position);
-        Debug.Log("trackBinding.rotation " + trackBinding.rotation);
     }
 
     public override void OnPlayableDestroy (Playable playable)
