@@ -1,16 +1,17 @@
 ﻿using System;
+using TimelineExtensions;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 #if UNITY_EDITOR
 using UnityEditor;
-using UnityEditor.Timeline;
+
 #endif
 
 [Serializable]
 public class TransformDoTweenClip : PlayableAsset, ITimelineClipAsset
 {
-    #if UNITY_EDITOR
+#if UNITY_EDITOR
     [CustomEditor (typeof (TransformDoTweenClip))]
     public class TransformDoTweenClipEditor : Editor
     {
@@ -33,11 +34,6 @@ public class TransformDoTweenClip : PlayableAsset, ITimelineClipAsset
         private void OnEnable ()
         {
             SceneView.onSceneGUIDelegate += OnSceneGui;
-        }
-
-        public override void OnInspectorGUI ()
-        {
-            base.OnInspectorGUI ();
         }
 
         private void OnSceneGui (SceneView sceneView)
@@ -84,13 +80,13 @@ public class TransformDoTweenClip : PlayableAsset, ITimelineClipAsset
 
             if (hasChanges) {
                 serializedObject.ApplyModifiedProperties ();
-                TimelineEditor.playableDirector.RebuildGraph ();
-                TimelineEditor.playableDirector.Evaluate ();
+                Utils.RebuildTimelineGraph ();
+
                 Repaint ();
             }
         }
     }
-    #endif
+#endif
 
     public TransformDoTweenBehaviour template = new TransformDoTweenBehaviour ();
 

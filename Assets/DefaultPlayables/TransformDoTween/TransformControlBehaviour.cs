@@ -32,19 +32,27 @@ public class TransformControlBehaviour : PlayableBehaviour
             rect = DrawProperty (positionProp, rect);
             rect = DrawProperty (rotationProp, rect);
 
-            TransformDoTweenBehaviour.PositionRotationPair positionRotationPair;
-            if (Utils.DeserializeFromSystemCopyBuffer (out positionRotationPair)) {
-                float width = 75f;
-                rect.x = rect.x + (rect.width - width) / 2f;
-                rect.y += rect.height;
-                rect.width = width;
-                rect.height = EditorGUIUtility.singleLineHeight;
+            float width = 50f;
+            float space = 10f;
+            rect.x = rect.x + (rect.width - 2 * width - space) / 2f;
+            rect.y += rect.height;
+            rect.width = width;
+            rect.height = EditorGUIUtility.singleLineHeight;
+            if (GUI.Button (rect, "Copy")) {
+                Utils.SerializeToSystemCopyBuffer (new PositionRotationPair (positionProp.vector3Value, rotationProp.vector3Value));
+            }
 
-                if (GUI.Button (rect, "Paste")) {
+            GUI.enabled = Utils.SystemBufferContains<PositionRotationPair> ();
+            rect.x += space + width;
+            if (GUI.Button (rect, "Paste")) {
+                PositionRotationPair positionRotationPair;
+                if (Utils.DeserializeFromSystemCopyBuffer (out positionRotationPair)) {
                     positionProp.vector3Value = positionRotationPair.Position;
                     rotationProp.vector3Value = positionRotationPair.Rotation;
                 }
             }
+
+            GUI.enabled = true;
         }
     }
 #endif

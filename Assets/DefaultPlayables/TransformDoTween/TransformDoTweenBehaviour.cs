@@ -15,32 +15,45 @@ using UnityEditor;
 [Serializable]
 public class TransformDoTweenBehaviour : PlayableBehaviour
 {
-    [Serializable]
-    public class PositionRotationPair
-    {
-        public Vector3 Position;
-        public Vector3 Rotation;
-
-        public PositionRotationPair ()
-        {
-        }
-
-        public PositionRotationPair (Vector3 position, Vector3 rotation)
-        {
-            Position = position;
-            Rotation = rotation;
-        }
-
-        public override string ToString ()
-        {
-            return $"PositionRotationPair {nameof (Position)}: {Position}, {nameof (Rotation)}: {Rotation}";
-        }
-    }
-
 #if UNITY_EDITOR
     [CustomPropertyDrawer (typeof (TransformDoTweenBehaviour))]
     public class TransformDoTweenDrawer : PropertyDrawer
     {
+        private GenericMenu GetMenu (
+            GenericMenu.MenuFunction startFunc,
+            GenericMenu.MenuFunction endFunc)
+        {
+            var menu = new GenericMenu ();
+            menu.AddItem (new GUIContent ("Start"), false, startFunc);
+            menu.AddItem (new GUIContent ("End"), false, endFunc);
+
+            return menu;
+        }
+
+        private void Paste (SerializedProperty property, string positionProperty, string rotationProperty)
+        {
+            PositionRotationPair positionRotationPair;
+            if (!Utils.DeserializeFromSystemCopyBuffer (out positionRotationPair))
+                return;
+
+            property
+                .FindPropertyRelative (positionProperty)
+                .vector3Value = positionRotationPair.Position;
+
+            property
+                .FindPropertyRelative (rotationProperty)
+                .vector3Value = positionRotationPair.Rotation;
+
+            property.serializedObject.ApplyModifiedProperties ();
+            property.serializedObject.Update ();
+            Utils.RebuildTimelineGraph ();
+        }
+
+        private void Copy (SerializedProperty position, SerializedProperty rotation)
+        {
+            Utils.SerializeToSystemCopyBuffer (new PositionRotationPair (position.vector3Value, rotation.vector3Value));
+        }
+
         private Rect DrawProperty (SerializedProperty property, Rect rect)
         {
             rect.y += rect.height;
@@ -67,13 +80,26 @@ public class TransformDoTweenBehaviour : PlayableBehaviour
             rect = DrawProperty (positionEaseProp, rect);
             rect = DrawProperty (rotationEaseProp, rect);
 
-            float width = 90f;
-            rect.x = rect.x + (rect.width - width) / 2f;
+            float width = 50f;
+            float space = 10f;
+            rect.x = rect.x + (rect.width - 2 * width - space) / 2f;
             rect.y += rect.height;
             rect.width = width;
-            if (GUI.Button (rect, "Copy End"))
-                Utils.SerializeToSystemCopyBuffer (
-                    new PositionRotationPair (endPositionProp.vector3Value, endRotationProp.vector3Value));
+            if (GUI.Button (rect, "Copy")) {
+                GenericMenu menu = GetMenu (() => Copy (startPositionProp, startRotationProp), () =>
+                    Copy (endPositionProp, endRotationProp));
+                menu.ShowAsContext ();
+            }
+
+            GUI.enabled = Utils.SystemBufferContains<PositionRotationPair> ();
+            rect.x += space + width;
+            if (GUI.Button (rect, "Paste")) {
+                GenericMenu menu = GetMenu (() => Paste (property, "startPosition", "startRotation"), () =>
+                    Paste (property, "endPosition", "endRotation"));
+                menu.ShowAsContext ();
+            }
+
+            GUI.enabled = true;
         }
 
         public override float GetPropertyHeight (SerializedProperty property, GUIContent label)

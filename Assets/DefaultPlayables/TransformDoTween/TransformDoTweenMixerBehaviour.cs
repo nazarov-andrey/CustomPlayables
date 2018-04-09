@@ -121,7 +121,7 @@ public class TransformDoTweenMixerBehaviour : PlayableBehaviour
             blendedPosition += position * weight;
             blendedRotation *= ScaleQuaternion (rotation, weight);
         }
-        
+
         trackBinding.position = blendedPosition + (1f - totalWeight) * defaultPosition.Value;
         trackBinding.rotation = blendedRotation * ScaleQuaternion (defaultRotation.Value, 1f - totalWeight);
     }
