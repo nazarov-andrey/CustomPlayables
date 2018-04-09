@@ -15,18 +15,18 @@ public class CameraControlMixerBehaviour : PlayableBehaviour
                 .SetEase (input.Ease);
         }
     }
-    
+
     private Dictionary<ScriptPlayable<CameraControlBehaviour>, FloatTweenProvider> FOWProviders =
-        new Dictionary<ScriptPlayable<CameraControlBehaviour>, FloatTweenProvider> ();    
-   
-    private FloatTweenProvider GetFOWProvider (ScriptPlayable<CameraControlBehaviour> playableInput)
+        new Dictionary<ScriptPlayable<CameraControlBehaviour>, FloatTweenProvider> ();
+
+    private FloatTweenProvider GetFOWProvider (ScriptPlayable<CameraControlBehaviour> playableInput, double duration)
     {
         FloatTweenProvider FOWProvider;
         if (FOWProviders.TryGetValue (playableInput, out FOWProvider))
             return FOWProvider;
 
         FOWProvider = new FloatTweenProvider ();
-        FOWProvider.Init (playableInput, x => x.StartFieldOfView);
+        FOWProvider.Init (playableInput, x => x.StartFieldOfView, duration);
         FOWProviders.Add (playableInput, FOWProvider);
 
         return FOWProvider;
@@ -41,8 +41,8 @@ public class CameraControlMixerBehaviour : PlayableBehaviour
             return;
 
         if (!DefaultFOWValue.HasValue)
-            DefaultFOWValue = trackBinding.fieldOfView;        
-        
+            DefaultFOWValue = trackBinding.fieldOfView;
+
         float totalWeight = 0f;
         float blendedFOW = 0f;
         for (int i = 0, inputCount = playable.GetInputCount (); i < inputCount; i++) {
@@ -51,7 +51,7 @@ public class CameraControlMixerBehaviour : PlayableBehaviour
 
             float weight = playable.GetInputWeight (i);
 
-            FloatTweenProvider FOWProvider = GetFOWProvider (playableInput);
+            FloatTweenProvider FOWProvider = GetFOWProvider (playableInput, Durations[i]);
             blendedFOW += FOWProvider.Value * weight;
             totalWeight += weight;
         }
@@ -63,4 +63,6 @@ public class CameraControlMixerBehaviour : PlayableBehaviour
     {
         DefaultFOWValue = null;
     }
+
+    public double[] Durations;
 }

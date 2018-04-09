@@ -4,7 +4,7 @@ using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Playables;
 
-public class TransformDoTweenMixerBehaviour : PlayableBehaviour
+public class TransformMixerBehaviour : PlayableBehaviour
 {
     class VectorTweenProvider : ValueTweenProvider<Vector3, TransformDoTweenBehaviour>
     {
@@ -40,7 +40,8 @@ public class TransformDoTweenMixerBehaviour : PlayableBehaviour
     private TProvider GetValueProvider<TProvider, TType> (
         ScriptPlayable<TransformDoTweenBehaviour> playableInput,
         Dictionary<ScriptPlayable<TransformDoTweenBehaviour>, TProvider> providers,
-        Func<TransformDoTweenBehaviour, TType> initialValueObtainer)
+        Func<TransformDoTweenBehaviour, TType> initialValueObtainer,
+        double duration)
         where TProvider : ValueTweenProvider<TType, TransformDoTweenBehaviour>, new ()
         where TType : struct
     {
@@ -49,24 +50,29 @@ public class TransformDoTweenMixerBehaviour : PlayableBehaviour
             return valueTweenProvider;
 
         valueTweenProvider = new TProvider ();
-        valueTweenProvider.Init (playableInput, initialValueObtainer);
+        valueTweenProvider.Init (playableInput, initialValueObtainer, duration);
 
         providers.Add (playableInput, valueTweenProvider);
 
         return valueTweenProvider;
     }
 
-    private VectorTweenProvider GetPositionProvider (ScriptPlayable<TransformDoTweenBehaviour> playableInput)
+    private VectorTweenProvider GetPositionProvider (
+        ScriptPlayable<TransformDoTweenBehaviour> playableInput,
+        double duration)
     {
-        return GetValueProvider (playableInput, positionProviders, x => x.startPosition);
+        return GetValueProvider (playableInput, positionProviders, x => x.startPosition, duration);
     }
 
-    private QuaternionTweenProvider GetRotationProvider (ScriptPlayable<TransformDoTweenBehaviour> playableInput)
+    private QuaternionTweenProvider GetRotationProvider (
+        ScriptPlayable<TransformDoTweenBehaviour> playableInput,
+        double duration)
     {
-        return GetValueProvider (playableInput, rotationProviders, x => Quaternion.Euler (x.startRotation));
+        return GetValueProvider (playableInput, rotationProviders, x => Quaternion.Euler (x.startRotation), duration);
     }
 
-    private bool TryCast<TBehaviour> (Playable playableInput, out ScriptPlayable<TBehaviour> scriptPlayable) where TBehaviour : class, IPlayableBehaviour, new()
+    private bool TryCast<TBehaviour> (Playable playableInput, out ScriptPlayable<TBehaviour> scriptPlayable)
+        where TBehaviour : class, IPlayableBehaviour, new ()
     {
         try {
             scriptPlayable = (ScriptPlayable<TBehaviour>) playableInput;
@@ -102,9 +108,9 @@ public class TransformDoTweenMixerBehaviour : PlayableBehaviour
             do {
                 ScriptPlayable<TransformDoTweenBehaviour> doTweenInput;
                 if (TryCast (playableInput, out doTweenInput)) {
-                    position = GetPositionProvider (doTweenInput).Value;
-                    rotation = GetRotationProvider (doTweenInput).Value;
-                    
+                    position = GetPositionProvider (doTweenInput, Durations[i]).Value;
+                    rotation = GetRotationProvider (doTweenInput, Durations[i]).Value;
+
                     break;
                 }
 
@@ -113,7 +119,7 @@ public class TransformDoTweenMixerBehaviour : PlayableBehaviour
                     TransformControlBehaviour behaviour = transformControlInput.GetBehaviour ();
                     position = behaviour.Position;
                     rotation = Quaternion.Euler (behaviour.Rotation);
-                    
+
                     break;
                 }
             } while (false);
@@ -131,6 +137,8 @@ public class TransformDoTweenMixerBehaviour : PlayableBehaviour
         defaultPosition = null;
         defaultRotation = null;
     }
+
+    public double[] Durations;
 
     static Quaternion ScaleQuaternion (Quaternion rotation, float multiplier)
     {

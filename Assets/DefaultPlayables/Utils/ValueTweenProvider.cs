@@ -1,5 +1,6 @@
 ﻿using System;
 using DG.Tweening;
+using TimelineExtensions;
 using UnityEngine;
 using UnityEngine.Playables;
 
@@ -13,9 +14,11 @@ public abstract class ValueTweenProvider<TValue, TBehaviour>
 
     public void Init (
         ScriptPlayable<TBehaviour> playableInput,
-        Func<TBehaviour, TValue> initialValueObtainer)
+        Func<TBehaviour, TValue> initialValueObtainer,
+        double? duration = null)
     {
         this.playableInput = playableInput;
+        Duration = (float) (duration.HasValue ? duration.Value : playableInput.GetDuration ());
         value = initialValueObtainer (playableInput.GetBehaviour ());
         RefreshTweener ();
     }
@@ -32,7 +35,7 @@ public abstract class ValueTweenProvider<TValue, TBehaviour>
         return playableInput.GetBehaviour ();
     }
 
-    protected float Duration => (float) playableInput.GetDuration ();
+    protected float Duration { private set; get; }
 
     private float Time => (float) playableInput.GetTime ();
 

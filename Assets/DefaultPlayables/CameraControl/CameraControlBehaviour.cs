@@ -1,5 +1,6 @@
 using System;
 using DG.Tweening;
+using TimelineExtensions;
 using UnityEngine;
 using UnityEngine.Playables;
 #if UNITY_EDITOR

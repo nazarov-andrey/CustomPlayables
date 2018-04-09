@@ -90,7 +90,7 @@ public class TransformDoTweenClip : PlayableAsset, ITimelineClipAsset
 
     public TransformDoTweenBehaviour template = new TransformDoTweenBehaviour ();
 
-    public ClipCaps clipCaps => ClipCaps.Blending;
+    public ClipCaps clipCaps => ClipCaps.Blending | ClipCaps.Extrapolation;
 
     public override Playable CreatePlayable (PlayableGraph graph, GameObject owner)
     {

@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System.Linq;
+using UnityEditor;
+using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
@@ -6,11 +8,16 @@ using UnityEngine.Timeline;
 [TrackClipType(typeof(TransformDoTweenClip))]
 [TrackClipType(typeof(TransformControlClip))]
 [TrackBindingType(typeof(Transform))]
-public class TransformDoTweenTrack : TrackAsset
+public class TransformTrack : TrackAsset
 {
 	public override Playable CreateTrackMixer(PlayableGraph graph, GameObject go, int inputCount)
 	{
-	    return ScriptPlayable<TransformDoTweenMixerBehaviour>.Create (graph, inputCount);
+	    var playable = ScriptPlayable<TransformMixerBehaviour>.Create (graph, inputCount);
+		playable.GetBehaviour().Durations = GetClips ()
+	        .Select (x => x.duration)
+	        .ToArray ();
+	    
+	    return playable;
 	}
 
     public override void GatherProperties(PlayableDirector director, IPropertyCollector driver)
@@ -19,7 +26,7 @@ public class TransformDoTweenTrack : TrackAsset
         var comp = director.GetGenericBinding(this) as Transform;
         if (comp == null)
             return;
-        var so = new UnityEditor.SerializedObject(comp);
+        var so = new SerializedObject(comp);
         var iter = so.GetIterator();
         while (iter.NextVisible(true))
         {
