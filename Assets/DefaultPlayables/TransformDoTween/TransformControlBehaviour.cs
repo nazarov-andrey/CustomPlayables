@@ -30,29 +30,37 @@ public class TransformControlBehaviour : PlayableBehaviour
 
             Rect rect = new Rect (position.x, position.y, position.width, 0f);
             rect = DrawProperty (positionProp, rect);
-            rect = DrawProperty (rotationProp, rect);
+            DrawProperty (rotationProp, rect);
 
-            float width = 50f;
-            float space = 10f;
-            rect.x = rect.x + (rect.width - 2 * width - space) / 2f;
-            rect.y += rect.height;
-            rect.width = width;
-            rect.height = EditorGUIUtility.singleLineHeight;
-            if (GUI.Button (rect, "Copy")) {
-                Utils.SerializeToSystemCopyBuffer (new PositionRotationPair (positionProp.vector3Value, rotationProp.vector3Value));
+            Rect gearPos = position;
+            gearPos.x = gearPos.width;
+            if (Utils.GearButton (gearPos)) {
+                GenericMenu menu = new GenericMenu ();
+                menu.AddItem (
+                    new GUIContent ("Copy"),
+                    false,
+                    () => Utils.SerializeToSystemCopyBuffer (new PositionRotationPair (positionProp.vector3Value,
+                        rotationProp.vector3Value)));
+
+                if (Utils.SystemBufferContains<PositionRotationPair> ())
+                    menu.AddItem (
+                        new GUIContent ("Paste"),
+                        false,
+                        () =>
+                        {
+                            PositionRotationPair positionRotationPair;
+                            if (Utils.DeserializeFromSystemCopyBuffer (out positionRotationPair)) {
+                                positionProp.vector3Value = positionRotationPair.Position;
+                                rotationProp.vector3Value = positionRotationPair.Rotation;
+
+                                Utils.ApplyModificationsAndRebuildTimelineGraph (property.serializedObject);
+                            }
+                        });
+                else
+                    menu.AddDisabledItem (new GUIContent ("Paste"));
+
+                menu.ShowAsContext ();
             }
-
-            GUI.enabled = Utils.SystemBufferContains<PositionRotationPair> ();
-            rect.x += space + width;
-            if (GUI.Button (rect, "Paste")) {
-                PositionRotationPair positionRotationPair;
-                if (Utils.DeserializeFromSystemCopyBuffer (out positionRotationPair)) {
-                    positionProp.vector3Value = positionRotationPair.Position;
-                    rotationProp.vector3Value = positionRotationPair.Rotation;
-                }
-            }
-
-            GUI.enabled = true;
         }
     }
 #endif

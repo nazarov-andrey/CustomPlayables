@@ -19,17 +19,6 @@ public class TransformDoTweenBehaviour : PlayableBehaviour
     [CustomPropertyDrawer (typeof (TransformDoTweenBehaviour))]
     public class TransformDoTweenDrawer : PropertyDrawer
     {
-        private GenericMenu GetMenu (
-            GenericMenu.MenuFunction startFunc,
-            GenericMenu.MenuFunction endFunc)
-        {
-            var menu = new GenericMenu ();
-            menu.AddItem (new GUIContent ("Start"), false, startFunc);
-            menu.AddItem (new GUIContent ("End"), false, endFunc);
-
-            return menu;
-        }
-
         private void Paste (SerializedProperty property, string positionProperty, string rotationProperty)
         {
             PositionRotationPair positionRotationPair;
@@ -44,9 +33,7 @@ public class TransformDoTweenBehaviour : PlayableBehaviour
                 .FindPropertyRelative (rotationProperty)
                 .vector3Value = positionRotationPair.Rotation;
 
-            property.serializedObject.ApplyModifiedProperties ();
-            property.serializedObject.Update ();
-            Utils.RebuildTimelineGraph ();
+            Utils.ApplyModificationsAndRebuildTimelineGraph (property.serializedObject);
         }
 
         private void Copy (SerializedProperty position, SerializedProperty rotation)
@@ -61,6 +48,23 @@ public class TransformDoTweenBehaviour : PlayableBehaviour
             EditorGUI.PropertyField (rect, property);
 
             return rect;
+        }
+
+        private void SwapVector3Properties (SerializedProperty a, SerializedProperty b)
+        {
+            Vector3 c = a.vector3Value;
+            a.vector3Value = b.vector3Value;
+            b.vector3Value = c;
+        }
+
+        private void Swap (SerializedProperty property)
+        {
+            SwapVector3Properties (property.FindPropertyRelative ("startPosition"),
+                property.FindPropertyRelative ("endPosition"));
+            SwapVector3Properties (property.FindPropertyRelative ("startRotation"),
+                property.FindPropertyRelative ("endRotation"));
+
+            Utils.ApplyModificationsAndRebuildTimelineGraph (property.serializedObject);
         }
 
         public override void OnGUI (Rect position, SerializedProperty property, GUIContent label)
@@ -80,26 +84,37 @@ public class TransformDoTweenBehaviour : PlayableBehaviour
             rect = DrawProperty (positionEaseProp, rect);
             rect = DrawProperty (rotationEaseProp, rect);
 
-            float width = 50f;
-            float space = 10f;
-            rect.x = rect.x + (rect.width - 2 * width - space) / 2f;
-            rect.y += rect.height;
-            rect.width = width;
-            if (GUI.Button (rect, "Copy")) {
-                GenericMenu menu = GetMenu (() => Copy (startPositionProp, startRotationProp), () =>
-                    Copy (endPositionProp, endRotationProp));
+            Rect gearPos = position;
+            gearPos.x = gearPos.width;
+            if (Utils.GearButton (gearPos)) {
+                GenericMenu menu = new GenericMenu ();
+                menu.AddItem (
+                    new GUIContent ("Copy/Start"),
+                    false,
+                    () => Copy (startPositionProp, startRotationProp));
+
+                menu.AddItem (
+                    new GUIContent ("Copy/End"),
+                    false,
+                    () => Copy (endPositionProp, endRotationProp));
+
+                if (Utils.SystemBufferContains<PositionRotationPair> ()) {
+                    menu.AddItem (
+                        new GUIContent ("Paste/Start"),
+                        false,
+                        () => Paste (property, "startPosition", "startRotation"));
+
+                    menu.AddItem (
+                        new GUIContent ("Paste/End"),
+                        false,
+                        () => Paste (property, "endPosition", "endRotation"));
+                } else {
+                    menu.AddDisabledItem (new GUIContent ("Paste"));
+                }
+
+                menu.AddItem (new GUIContent ("Swap"), false, () => Swap (property));
                 menu.ShowAsContext ();
             }
-
-            GUI.enabled = Utils.SystemBufferContains<PositionRotationPair> ();
-            rect.x += space + width;
-            if (GUI.Button (rect, "Paste")) {
-                GenericMenu menu = GetMenu (() => Paste (property, "startPosition", "startRotation"), () =>
-                    Paste (property, "endPosition", "endRotation"));
-                menu.ShowAsContext ();
-            }
-
-            GUI.enabled = true;
         }
 
         public override float GetPropertyHeight (SerializedProperty property, GUIContent label)
