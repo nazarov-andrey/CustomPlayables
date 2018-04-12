@@ -49,10 +49,10 @@ MonoBehaviour:
   m_Name: TransformDoTweenClip
   m_EditorClassIdentifier: 
   template:
-    startPosition: {x: 22.976562, y: 0, z: -22.921875}
-    startRotation: {x: 0, y: 0, z: 0}
-    endPosition: {x: -21.692772, y: 0, z: 26.123062}
-    endRotation: {x: 0, y: 0, z: 0}
+    startPosition: {x: -65.5, y: 0, z: 35.3}
+    startRotation: {x: 52.05221, y: 39.34915, z: 133.30916}
+    endPosition: {x: -23.34821, y: -112.13409, z: -176.45718}
+    endRotation: {x: 52.05221, y: 39.34915, z: 133.30916}
     positionEase: 0
     rotationEase: 0
 --- !u!114 &114491064373257010
