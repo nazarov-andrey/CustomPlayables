@@ -34,27 +34,22 @@ public class TransformControlBehaviour : PlayableBehaviour
 
             Rect gearPos = position;
             gearPos.x = gearPos.width;
+            gearPos.y -= EditorGUIUtility.singleLineHeight;
             if (Utils.GearButton (gearPos)) {
                 GenericMenu menu = new GenericMenu ();
                 menu.AddItem (
                     new GUIContent ("Copy"),
                     false,
-                    () => Utils.SerializeToSystemCopyBuffer (new PositionRotationPair (positionProp.vector3Value,
-                        rotationProp.vector3Value)));
+                    () => Utils.CopyToPasteboardAsTransform (positionProp.vector3Value, rotationProp.vector3Value));
 
-                if (Utils.SystemBufferContains<PositionRotationPair> ())
+                if (Utils.PasteboardContainsTransform ())
                     menu.AddItem (
                         new GUIContent ("Paste"),
                         false,
                         () =>
                         {
-                            PositionRotationPair positionRotationPair;
-                            if (Utils.DeserializeFromSystemCopyBuffer (out positionRotationPair)) {
-                                positionProp.vector3Value = positionRotationPair.Position;
-                                rotationProp.vector3Value = positionRotationPair.Rotation;
-
-                                Utils.ApplyModificationsAndRebuildTimelineGraph (property.serializedObject);
-                            }
+                            Utils.PasteFromPasteboardTransform (positionProp, rotationProp);
+                            Utils.ApplyModificationsAndRebuildTimelineGraph (property.serializedObject);
                         });
                 else
                     menu.AddDisabledItem (new GUIContent ("Paste"));

@@ -1,33 +1,45 @@
 ﻿#if UNITY_EDITOR
+using System;
+using System.Linq;
+using System.Reflection;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEditor.Timeline;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace TimelineExtensions
 {
     public static class Utils
     {
-        public static void SerializeToSystemCopyBuffer (object o)
+        public static void CopyToPasteboardAsTransform (Vector3 position, Vector3 rotation)
         {
-            EditorGUIUtility.systemCopyBuffer = o.GetType () + " " + EditorJsonUtility.ToJson (o);
+            GameObject gameObject = new GameObject ();
+            gameObject.transform.position = position;
+            gameObject.transform.rotation = Quaternion.Euler (rotation);
+
+            ComponentUtility.CopyComponent (gameObject.transform);
+            Object.DestroyImmediate (gameObject);
         }
 
-        public static bool SystemBufferContains<T> ()
+        public static bool PasteboardContainsTransform ()
         {
-            return EditorGUIUtility.systemCopyBuffer.StartsWith (typeof (T).ToString ());
+            GameObject gameObject = new GameObject ();
+            bool result = ComponentUtility.PasteComponentValues (gameObject.transform);
+            Object.DestroyImmediate (gameObject);
+
+            return result;
         }
 
-        public static bool DeserializeFromSystemCopyBuffer<T> (out T o) where T : new ()
+        public static void PasteFromPasteboardTransform (SerializedProperty position, SerializedProperty rotatation)
         {
-            o = default (T);
-            string type = typeof (T).ToString ();
-            if (!EditorGUIUtility.systemCopyBuffer.StartsWith (type))
-                return false;
+            GameObject gameObject = new GameObject ();
+            if (ComponentUtility.PasteComponentValues (gameObject.transform)) {
+                position.vector3Value = gameObject.transform.position;
+                rotatation.vector3Value = gameObject.transform.rotation.eulerAngles;
+            }
 
-            o = new T ();
-            EditorJsonUtility.FromJsonOverwrite (EditorGUIUtility.systemCopyBuffer.Replace (type, ""), o);
-
-            return true;
+            Object.DestroyImmediate (gameObject);
         }
 
         public static void RebuildTimelineGraph ()

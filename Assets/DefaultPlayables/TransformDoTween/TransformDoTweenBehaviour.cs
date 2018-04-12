@@ -21,24 +21,15 @@ public class TransformDoTweenBehaviour : PlayableBehaviour
     {
         private void Paste (SerializedProperty property, string positionProperty, string rotationProperty)
         {
-            PositionRotationPair positionRotationPair;
-            if (!Utils.DeserializeFromSystemCopyBuffer (out positionRotationPair))
-                return;
-
-            property
-                .FindPropertyRelative (positionProperty)
-                .vector3Value = positionRotationPair.Position;
-
-            property
-                .FindPropertyRelative (rotationProperty)
-                .vector3Value = positionRotationPair.Rotation;
-
+            Utils.PasteFromPasteboardTransform (
+                property.FindPropertyRelative (positionProperty),
+                property.FindPropertyRelative (rotationProperty));
             Utils.ApplyModificationsAndRebuildTimelineGraph (property.serializedObject);
         }
 
         private void Copy (SerializedProperty position, SerializedProperty rotation)
         {
-            Utils.SerializeToSystemCopyBuffer (new PositionRotationPair (position.vector3Value, rotation.vector3Value));
+            Utils.CopyToPasteboardAsTransform (position.vector3Value, rotation.vector3Value);
         }
 
         private Rect DrawProperty (SerializedProperty property, Rect rect)
@@ -86,6 +77,7 @@ public class TransformDoTweenBehaviour : PlayableBehaviour
 
             Rect gearPos = position;
             gearPos.x = gearPos.width;
+            gearPos.y -= EditorGUIUtility.singleLineHeight;
             if (Utils.GearButton (gearPos)) {
                 GenericMenu menu = new GenericMenu ();
                 menu.AddItem (
@@ -98,7 +90,7 @@ public class TransformDoTweenBehaviour : PlayableBehaviour
                     false,
                     () => Copy (endPositionProp, endRotationProp));
 
-                if (Utils.SystemBufferContains<PositionRotationPair> ()) {
+                if (Utils.PasteboardContainsTransform ()) {
                     menu.AddItem (
                         new GUIContent ("Paste/Start"),
                         false,
