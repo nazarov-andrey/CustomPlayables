@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using DG.Tweening;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEditor.Timeline;
@@ -44,8 +45,10 @@ namespace TimelineExtensions
 
         public static void RebuildTimelineGraph ()
         {
-            TimelineEditor.playableDirector.RebuildGraph ();
-            TimelineEditor.playableDirector.Evaluate ();
+            if (TimelineEditor.playableDirector != null) {
+                TimelineEditor.playableDirector.RebuildGraph ();
+                TimelineEditor.playableDirector.Evaluate ();                
+            }
         }
 
         public static bool GearButton (Rect rect)

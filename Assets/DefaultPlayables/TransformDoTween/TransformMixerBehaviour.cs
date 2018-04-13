@@ -1,87 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using DG.Tweening;
+using Microsoft.Win32.SafeHandles;
 using UnityEngine;
 using UnityEngine.Playables;
 
 public class TransformMixerBehaviour : PlayableBehaviour
 {
-    class VectorTweenProvider : ValueTweenProvider<Vector3, TransformDoTweenBehaviour>
-    {
-        protected override void RefreshTweener ()
-        {
-            TransformDoTweenBehaviour input = GetInput ();
-            tweener = DOTween
-                .To (() => value, x => value = x, input.endPosition, Duration)
-                .SetEase (input.positionEase);
-        }
-    }
-
-    class QuaternionTweenProvider : ValueTweenProvider<Quaternion, TransformDoTweenBehaviour>
-    {
-        protected override void RefreshTweener ()
-        {
-            TransformDoTweenBehaviour input = GetInput ();
-            tweener = DOTween
-                .To (() => value, x => value = x, input.endRotation, Duration)
-                .SetEase (input.rotationEase);
-        }
-    }
-
-    private Dictionary<ScriptPlayable<TransformDoTweenBehaviour>, VectorTweenProvider> positionProviders =
-        new Dictionary<ScriptPlayable<TransformDoTweenBehaviour>, VectorTweenProvider> ();
-
-    private Dictionary<ScriptPlayable<TransformDoTweenBehaviour>, QuaternionTweenProvider> rotationProviders =
-        new Dictionary<ScriptPlayable<TransformDoTweenBehaviour>, QuaternionTweenProvider> ();
-
     private Vector3? defaultPosition;
     private Quaternion? defaultRotation;
-
-    private TProvider GetValueProvider<TProvider, TType> (
-        ScriptPlayable<TransformDoTweenBehaviour> playableInput,
-        Dictionary<ScriptPlayable<TransformDoTweenBehaviour>, TProvider> providers,
-        Func<TransformDoTweenBehaviour, TType> initialValueObtainer,
-        double duration)
-        where TProvider : ValueTweenProvider<TType, TransformDoTweenBehaviour>, new ()
-        where TType : struct
-    {
-        TProvider valueTweenProvider;
-        if (providers.TryGetValue (playableInput, out valueTweenProvider))
-            return valueTweenProvider;
-
-        valueTweenProvider = new TProvider ();
-        valueTweenProvider.Init (playableInput, initialValueObtainer, duration);
-
-        providers.Add (playableInput, valueTweenProvider);
-
-        return valueTweenProvider;
-    }
-
-    private VectorTweenProvider GetPositionProvider (
-        ScriptPlayable<TransformDoTweenBehaviour> playableInput,
-        double duration)
-    {
-        return GetValueProvider (playableInput, positionProviders, x => x.startPosition, duration);
-    }
-
-    private QuaternionTweenProvider GetRotationProvider (
-        ScriptPlayable<TransformDoTweenBehaviour> playableInput,
-        double duration)
-    {
-        return GetValueProvider (playableInput, rotationProviders, x => Quaternion.Euler (x.startRotation), duration);
-    }
-
-    private bool TryCast<TBehaviour> (Playable playableInput, out ScriptPlayable<TBehaviour> scriptPlayable)
-        where TBehaviour : class, IPlayableBehaviour, new ()
-    {
-        try {
-            scriptPlayable = (ScriptPlayable<TBehaviour>) playableInput;
-            return true;
-        } catch (InvalidCastException) {
-            scriptPlayable = default (ScriptPlayable<TBehaviour>);
-            return false;
-        }
-    }
 
     public override void ProcessFrame (Playable playable, FrameData info, object playerData)
     {
@@ -97,39 +24,38 @@ public class TransformMixerBehaviour : PlayableBehaviour
         Vector3 blendedPosition = Vector3.zero;
         Quaternion blendedRotation = Quaternion.identity;
         float totalWeight = 0f;
+        Space? space = null;
 
         for (int i = 0, inputCount = playable.GetInputCount (); i < inputCount; i++) {
-            Vector3 position = Vector3.zero;
-            Quaternion rotation = Quaternion.identity;
             Playable playableInput = playable.GetInput (i);
             float weight = playable.GetInputWeight (i);
+            if (Mathf.Approximately (weight, 0f))
+                continue;
+
             totalWeight += weight;
 
-            do {
-                ScriptPlayable<TransformDoTweenBehaviour> doTweenInput;
-                if (TryCast (playableInput, out doTweenInput)) {
-                    position = GetPositionProvider (doTweenInput, Durations[i]).Value;
-                    rotation = GetRotationProvider (doTweenInput, Durations[i]).Value;
+            ScriptPlayable<BaseTransformBehaviour> input = (ScriptPlayable<BaseTransformBehaviour>) playableInput;
+            BaseTransformBehaviour transformBehaviour = input.GetBehaviour ();
+            if (!space.HasValue)
+                space = transformBehaviour.Space;
+            else if (space.Value != transformBehaviour.Space)
+                throw new Exception ("Cannot blend transform behaviours with different space");
 
-                    break;
-                }
-
-                ScriptPlayable<TransformControlBehaviour> transformControlInput;
-                if (TryCast (playableInput, out transformControlInput)) {
-                    TransformControlBehaviour behaviour = transformControlInput.GetBehaviour ();
-                    position = behaviour.Position;
-                    rotation = Quaternion.Euler (behaviour.Rotation);
-
-                    break;
-                }
-            } while (false);
-
-            blendedPosition += position * weight;
-            blendedRotation *= ScaleQuaternion (rotation, weight);
+            PositionRotationPair positionRotationPair = transformBehaviour.Evaluate (input.GetTime (), Durations[i]);
+            blendedPosition += positionRotationPair.Position * weight;
+            blendedRotation *= ScaleQuaternion (Quaternion.Euler (positionRotationPair.Rotation), weight);
         }
 
-        trackBinding.position = blendedPosition + (1f - totalWeight) * defaultPosition.Value;
-        trackBinding.rotation = blendedRotation * ScaleQuaternion (defaultRotation.Value, 1f - totalWeight);
+        blendedPosition += (1f - totalWeight) * defaultPosition.Value;
+        blendedRotation *= ScaleQuaternion (defaultRotation.Value, 1f - totalWeight);
+
+        if (space.HasValue && space.Value == Space.Self) {
+            trackBinding.localPosition = blendedPosition;
+            trackBinding.localRotation = blendedRotation;
+        } else {
+            trackBinding.position = blendedPosition;
+            trackBinding.rotation = blendedRotation;
+        }
     }
 
     public override void OnPlayableDestroy (Playable playable)

@@ -1,4 +1,5 @@
 ﻿using System;
+using DG.Tweening;
 using TimelineExtensions;
 using UnityEngine;
 using UnityEngine.Playables;
@@ -8,7 +9,7 @@ using UnityEditor;
 #endif
 
 [Serializable]
-public class TransformControlBehaviour : PlayableBehaviour
+public class TransformControlBehaviour : BaseTransformBehaviour
 {
 #if UNITY_EDITOR
     [CustomPropertyDrawer (typeof (TransformControlBehaviour))]
@@ -25,12 +26,14 @@ public class TransformControlBehaviour : PlayableBehaviour
 
         public override void OnGUI (Rect position, SerializedProperty property, GUIContent label)
         {
-            SerializedProperty positionProp = property.FindPropertyRelative ("Position");
-            SerializedProperty rotationProp = property.FindPropertyRelative ("Rotation");
+            SerializedProperty positionProp = property.FindPropertyRelative ("position");
+            SerializedProperty rotationProp = property.FindPropertyRelative ("rotation");
+            SerializedProperty spaceProp = property.FindPropertyRelative ("space");
 
             Rect rect = new Rect (position.x, position.y, position.width, 0f);
             rect = DrawProperty (positionProp, rect);
-            DrawProperty (rotationProp, rect);
+            rect = DrawProperty (rotationProp, rect);
+            rect = DrawProperty (spaceProp, rect);
 
             Rect gearPos = position;
             gearPos.x = gearPos.width;
@@ -60,6 +63,19 @@ public class TransformControlBehaviour : PlayableBehaviour
     }
 #endif
 
-    public Vector3 Position;
-    public Vector3 Rotation;
+    [SerializeField]
+    private Vector3 position;
+
+    [SerializeField]
+    private Vector3 rotation;
+
+    [SerializeField]
+    private Space space = Space.World;
+
+    public override PositionRotationPair Evaluate (double time, double duration)
+    {
+        return new PositionRotationPair (position, rotation);
+    }
+
+    public override Space Space => space;
 }
