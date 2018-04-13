@@ -87,8 +87,8 @@ public class TransformDoTweenClip : PlayableAsset, ITimelineClipAsset
             if (localSpace) {
                 startPos = trackBinding.parent.TransformPoint (startPos);
                 endPos = trackBinding.parent.TransformPoint (endPos);
-                startRot *= trackBinding.parent.rotation;
-                endRot *= trackBinding.parent.rotation;
+                startRot = trackBinding.parent.rotation * startRot;
+                endRot = trackBinding.parent.rotation * endRot;
             }
 
             Vector3 newStartPos = Handles.PositionHandle (startPos, startRot);
@@ -108,8 +108,9 @@ public class TransformDoTweenClip : PlayableAsset, ITimelineClipAsset
                 if (localSpace) {
                     newStartPos = trackBinding.parent.InverseTransformPoint (newStartPos);
                     newEndPos = trackBinding.parent.InverseTransformPoint (newEndPos);
-                    newStartRot *= Quaternion.Inverse (trackBinding.parent.rotation);
-                    newEndRot *= Quaternion.Inverse (trackBinding.parent.rotation);
+
+                    newStartRot = Quaternion.Inverse (trackBinding.parent.rotation) * newStartRot;
+                    newEndRot = Quaternion.Inverse (trackBinding.parent.rotation) * newEndRot;
                 }
 
                 startPosProp.vector3Value = newStartPos;
