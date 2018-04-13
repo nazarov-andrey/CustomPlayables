@@ -1,16 +1,22 @@
+using System.Linq;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
-using System.Collections.Generic;
 
 [TrackColor(0.855f, 0.8623f, 0.87f)]
-[TrackClipType(typeof(CameraControlClip))]
+[TrackClipType(typeof(CameraDoTweenClip))]
 [TrackBindingType(typeof(Camera))]
-public class CameraControlTrack : TrackAsset
+public class CameraTrack : TrackAsset
 {
     public override Playable CreateTrackMixer(PlayableGraph graph, GameObject go, int inputCount)
     {
-        return ScriptPlayable<CameraControlMixerBehaviour>.Create (graph, inputCount);
+        var playable = ScriptPlayable<CameraMixerBehaviour>.Create (graph, inputCount);
+        playable.GetBehaviour().Durations = GetClips ()
+            .Select (x => x.duration)
+            .ToArray ();
+	    
+        return playable;
     }
 
     // Please note this assumes only one component of type Camera on the same gameobject.
@@ -21,7 +27,7 @@ public class CameraControlTrack : TrackAsset
         if (trackBinding == null)
             return;
 
-        var serializedObject = new UnityEditor.SerializedObject (trackBinding);
+        var serializedObject = new SerializedObject (trackBinding);
         var iterator = serializedObject.GetIterator();
         while (iterator.NextVisible(true))
         {

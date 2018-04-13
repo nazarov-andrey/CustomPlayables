@@ -4,15 +4,15 @@ using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
 [Serializable]
-public class CameraControlClip : PlayableAsset, ITimelineClipAsset
+public class CameraDoTweenClip : PlayableAsset, ITimelineClipAsset
 {
-    public CameraControlBehaviour template = new CameraControlBehaviour ();
+    public CameraDoTweenBehaviour template = new CameraDoTweenBehaviour ();
 
     public ClipCaps clipCaps => ClipCaps.None;
 
     public override Playable CreatePlayable (PlayableGraph graph, GameObject owner)
     {
-        var playable = ScriptPlayable<CameraControlBehaviour>.Create (graph, template);
+        var playable = ScriptPlayable<CameraDoTweenBehaviour>.Create (graph, template);
         return playable;
     }
 }

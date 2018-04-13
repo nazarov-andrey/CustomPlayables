@@ -41,9 +41,9 @@ public class TransformMixerBehaviour : PlayableBehaviour
             else if (space.Value != transformBehaviour.Space)
                 throw new Exception ("Cannot blend transform behaviours with different space");
 
-            PositionRotationPair positionRotationPair = transformBehaviour.Evaluate (input.GetTime (), Durations[i]);
-            blendedPosition += positionRotationPair.Position * weight;
-            blendedRotation *= ScaleQuaternion (Quaternion.Euler (positionRotationPair.Rotation), weight);
+            TransformBehaviourOutput transformBehaviourOutput = transformBehaviour.Evaluate (input.GetTime (), Durations[i]);
+            blendedPosition += transformBehaviourOutput.Position * weight;
+            blendedRotation *= ScaleQuaternion (Quaternion.Euler (transformBehaviourOutput.Rotation), weight);
         }
 
         blendedPosition += (1f - totalWeight) * defaultPosition.Value;

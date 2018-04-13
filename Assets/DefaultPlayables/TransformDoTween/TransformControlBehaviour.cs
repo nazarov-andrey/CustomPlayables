@@ -72,9 +72,9 @@ public class TransformControlBehaviour : BaseTransformBehaviour
     [SerializeField]
     private Space space = Space.World;
 
-    public override PositionRotationPair Evaluate (double time, double duration)
+    public override TransformBehaviourOutput Evaluate (double time, double duration)
     {
-        return new PositionRotationPair (position, rotation);
+        return new TransformBehaviourOutput (position, rotation);
     }
 
     public override Space Space => space;

@@ -3,12 +3,12 @@ using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Playables;
 
-public struct PositionRotationPair
+public struct TransformBehaviourOutput
 {
     public readonly Vector3 Position;
     public readonly Vector3 Rotation;
 
-    public PositionRotationPair (Vector3 position, Vector3 rotation)
+    public TransformBehaviourOutput (Vector3 position, Vector3 rotation)
     {
         Position = position;
         Rotation = rotation;
@@ -17,7 +17,7 @@ public struct PositionRotationPair
 
 public class BaseTransformBehaviour : PlayableBehaviour
 {
-    public virtual PositionRotationPair Evaluate (double time, double duration)
+    public virtual TransformBehaviourOutput Evaluate (double time, double duration)
     {
         throw new NotImplementedException ();
     }

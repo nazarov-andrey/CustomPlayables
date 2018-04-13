@@ -183,7 +183,7 @@ public class TransformDoTweenBehaviour : BaseTransformBehaviour
     private Tweener positionTweener;
     private Tweener rotationTweener;
 
-    public override PositionRotationPair Evaluate (double time, double duration)
+    public override TransformBehaviourOutput Evaluate (double time, double duration)
     {
         var fduration = (float) duration;
         var ftime = (float) time;
@@ -199,7 +199,7 @@ public class TransformDoTweenBehaviour : BaseTransformBehaviour
             .SetEase (rotationEase)
             .Goto (ftime);
 
-        return new PositionRotationPair (position, rotation);
+        return new TransformBehaviourOutput (position, rotation);
     }
 
     public override Space Space => space;
